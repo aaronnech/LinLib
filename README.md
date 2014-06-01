@@ -37,14 +37,14 @@ Interface Functions
 
 Functions that are exposed from the library under the namespace LinLib are as follows:
 
-      {
-        'parseMatrix' : parseMatrix,
-  			'parseVector' : parseVector,
-  			'parseVectors' : parseVectors,
-  			'parseFraction' : parseFraction,
-  			'changeOfBase' : changeOfBaseMatrix,
-  			'rowVecsToMatrix' : rowVecsToMatrix,
-  			'colVecsToMatrix' : colVecsToMatrix,
-  			'identity' : identity,
-  			'zero' : zero
-			}
+	{
+	'parseMatrix' : parseMatrix,
+	'parseVector' : parseVector,
+	'parseVectors' : parseVectors,
+	'parseFraction' : parseFraction,
+	'changeOfBase' : changeOfBaseMatrix,
+	'rowVecsToMatrix' : rowVecsToMatrix,
+	'colVecsToMatrix' : colVecsToMatrix,
+	'identity' : identity,
+	'zero' : zero
+	}

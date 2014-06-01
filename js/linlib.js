@@ -671,9 +671,7 @@ var LinLib = (function() {
 				result = result.augmentCol(id[i]);
 			}
 			var cols = result.gaussJordan().columnVectors();
-			return new Matrix(cols.splice(n, cols.length - 1).map(function(x) {
-				return x.toArray();
-			})).transpose();
+			return colVecsToMatrix(cols.splice(n, cols.length - 1));
 		};
 
 		/**
@@ -744,9 +742,11 @@ var LinLib = (function() {
 				return null;
 
 			var rows = self.rowVectors();
-			rows = rows.splice(i, 1);
+			rows.splice(i, 1);
 			return new Matrix(rows.map(function(r) {
-				return r.toArray().splice(j, 1);
+				var result = r.toArray();
+				result.splice(j, 1);
+				return result;
 			}));
 		};
 

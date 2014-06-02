@@ -48,3 +48,23 @@ Functions that are exposed from the library under the namespace LinLib are as fo
 	'identity' : identity,
 	'zero' : zero
 	}
+
+Of course, the library primitives, once constructed, will have operations exposed to them. (Such as transpose() for Matrix).
+
+Usage
+=====
+
+The library is non-mutable and chainable. So an example computation could be:
+
+	LinLib.colVecsToMatrix(LinLib.parseMatrix('{{2,0},{0,2}}').invert().add(LinLib.identity(2)).transpose().columnVectors()).transpose().invert().invert().toString();
+	
+This computation converts the column vectors of:
+
+	{2, 0}
+	{0, 2}
+
+Inverted, summed with the n = 2 identity matrix, and transposed.
+
+It then converts those column vectors back to a Matrix ('cause why not), and takes the inverse of the inverse of the transpose of that Matrix. It then takes that result and converts it to a string for printing.
+
+Obviously this example is not practical, but it serves as an example of how to use this library. To see all available commands for library primitives, check out linlib.js. It is fully documented with JavaDoc notation.

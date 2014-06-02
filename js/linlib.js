@@ -17,6 +17,69 @@ var LinLib = (function() {
 	var ZERO = new Fraction(0, 1);
 	var ONE = new Fraction(1, 1);
 	var NEGATIVE_ONE = new Fraction(-1, 1);
+	
+
+	//Operation Recording
+	var recordings = [];
+
+	/**
+	 * Starts a new recording.
+	 * 
+	 * @param  closure filter an optional parameter that will return
+	 *         true or false on a operation signature. Returning true
+	 *         indicates that this operation will be recorded, false
+	 *         will not.
+	 * @return int id where id is the id of this recording
+	 */
+	var startRecording = function(filter) {
+		if(typeof filter == 'undefined') {
+			filer = function(x) {return true};
+		}
+		recordings.push({'filter' : filter, 'ops' : []});
+		return recordings.length - 1;
+	};
+
+	/**
+	 * Stops a recording.
+	 * 
+	 * @param  int id the id of the recording to stop.
+	 * @return array A where A is an array of operations
+	 *         captured by the recording in the following format:
+	 *         {
+	 *         		sig : operation signature
+	 *         		obj : object operated on
+	 *         		args : arguments passed to operation
+	 *         }
+	 */
+	var stopRecording = function(id) {
+		return recordings.splice(id, 1)[0].ops;
+	};
+
+	/**
+	 * Attempts to record an operation on all open
+	 * recordings. (Sig must be accepted by a recording's
+	 * filter)
+	 * 
+	 * @param  string sig the signature of the operation
+	 * @param  Object? obj the object being operated on
+	 * @param  array[Object?] args the arguments passed to the operation
+	 * @return true if the operation was recorded by at least one recording,
+	 *         false otherwise.
+	 */
+	var record = function(sig, obj, args) {
+		if(recordings.length > 0) {
+			for(var i = 0; i < recordings.length; i++) {
+				if(recordings[i].filter(sig))
+					recordings[i].ops.push({
+						'sig' : sig,
+						'obj' : obj,
+						'args' : args
+					});
+			}
+			return true;
+		}
+		return false;
+	};
 
 	/**
 	 * Parses a Fraction from a string ignoring whitespace
@@ -240,6 +303,7 @@ var LinLib = (function() {
 		 * @return int n such that n is the numerator
 		 */
 		self.getNum = function() {
+			record('Fraction.getNum', self);
 			return numerator;
 		};
 
@@ -249,6 +313,7 @@ var LinLib = (function() {
 		 * @return int n such that n is the numerator
 		 */
 		self.getDen = function() {
+			record('Fraction.getDen', self);
 			return denominator;
 		};
 
@@ -259,6 +324,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self + f
 		 */
 		self.add = function(f) {
+			record('Fraction.add', self, [f]);
 			if(f.isZero())
 				return self;
 			return new Fraction(self.getNum() * f.getDen() + f.getNum() * self.getDen(),
@@ -272,6 +338,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self - f
 		 */
 		self.sub = function(f) {
+			record('Fraction.sub', self, [f]);
 			if(f.isZero())
 				return self;
 			return new Fraction(self.getNum() * f.getDen() - f.getNum() * self.getDen(),
@@ -285,6 +352,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self * f
 		 */
 		self.mult = function(f) {
+			record('Fraction.mult', self, [f]);
 			if(f.isZero())
 				return ZERO;
 			return new Fraction(self.getNum() * f.getNum(),
@@ -298,6 +366,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self / f
 		 */
 		self.div = function(f) {
+			record('Fraction.div', self, [f]);
 			if(self.isZero())
 				return ZERO;
 			return new Fraction(self.getNum() * f.getDen(),
@@ -310,6 +379,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self^-1
 		 */
 		self.invert = function() {
+			record('Fraction.invert', self);
 			if(self.isZero())
 				return ZERO;
 			return new Fraction(self.getDen(), self.getNum());
@@ -321,6 +391,7 @@ var LinLib = (function() {
 		 * @return float a such that a = self (to highest precision possible)
 		 */
 		self.toDec = function() {
+			record('Fraction.toDec', self);
 			if(self.isZero())
 				return 0;
 			return self.getNum() / self.getDen();
@@ -332,6 +403,7 @@ var LinLib = (function() {
 		 * @return float a such that a = -self
 		 */
 		self.negate = function() {
+			record('Fraction.negate', self);
 			if(self.isZero())
 				return ZERO;
 			return new Fraction(-self.getNum(), self.getDen());
@@ -343,6 +415,7 @@ var LinLib = (function() {
 		 * @return boolean b such that b = self == 0
 		 */
 		self.isZero = function() {
+			record('Fraction.isZero', self);
 			return self.getNum() == 0;
 		};
 
@@ -353,6 +426,7 @@ var LinLib = (function() {
 		 * @return boolean b such that b = self == f
 		 */
 		self.eq = function(f) {
+			record('Fraction.eq', self, [f]);
 			return self.getNum() == f.getNum() && self.getDen() == f.getDen();
 		}
 
@@ -362,6 +436,7 @@ var LinLib = (function() {
 		 * @return string s such that s represents self
 		 */
 		self.toString = function() {
+			record('Fraction.toString', self);
 			if(Math.abs(self.getNum()) == Math.abs(self.getDen()))
 				return (self.getNum() < 0 ? "-" : "") + "1";
 			return self.getNum() + (self.getDen() != 1 ? "/" + self.getDen() : "");
@@ -380,6 +455,7 @@ var LinLib = (function() {
 
 		//private
 		var sizesMatch = function(vec1, vec2) {
+			record('Vector.sizesMatch', self, [vec1, vec2]);
 			return vec1.dim() == vec2.dim();
 		}
 
@@ -391,6 +467,7 @@ var LinLib = (function() {
 		 * @return int n where n is the number of elements in self
 		 */
 		self.dim = function() {
+			record('Vector.dim', self);
 			return data.length;
 		};
 
@@ -400,6 +477,7 @@ var LinLib = (function() {
 		 * @return array[Fraction] the array representation of self
 		 */
 		self.toArray = function() {
+			record('Vector.toArray', self);
 			return data.slice(0);
 		}
 
@@ -410,6 +488,7 @@ var LinLib = (function() {
 		 * @return Vector a such that a = self + vec
 		 */
 		self.add = function(vec) {
+			record('Vector.add', self, [vec]);
 			if(sizesMatch(vec, self))
 				return new Vector(zip([self.toArray(), vec.toArray()]).map(function(x) {
 					return x[0].add(x[1]);
@@ -424,6 +503,7 @@ var LinLib = (function() {
 		 * @return Vector a such that a = self - vec
 		 */
 		self.sub = function(vec) {
+			record('Vector.sub', self, [vec]);
 			if(sizesMatch(vec, self))
 				return new Vector(zip([self.toArray(), vec.toArray()]).map(function(x) {
 					return x[0].sub(x[1]);
@@ -438,6 +518,7 @@ var LinLib = (function() {
 		 * @return Fraction a such that a = self (dot) vec
 		 */
 		self.dot = function(vec) {
+			record('Vector.dot', self, [vec]);
 			if(sizesMatch(vec, self))
 				return zip([self.toArray(), vec.toArray()]).reduce(function(prev, x) {
 					return prev.add(x[0].mult(x[1]));
@@ -452,6 +533,7 @@ var LinLib = (function() {
 		 * @return Vector a such that a = self * s
 		 */		
 		self.scale = function(s) {
+			record('Vector.scale', self, [s]);
 			return new Vector(self.toArray().map(function(x) {
 				return x.mult(s);
 			}));
@@ -464,9 +546,24 @@ var LinLib = (function() {
 		 * @return boolean b such that b = self == vec
 		 */
 		self.eq = function(vec) {
+			record('Vector.eq', self, [vec]);
 			return zip([self.toArray(), vec.toArray()]).reduce(function(prev, x) {
 				return prev && x[0].eq(x[1]);
 			});
+		}
+
+		/**
+		 * Tests if the current vector contains zero as an element.
+		 * 
+		 * @return boolean b such that b == true if self has zero as
+		 *            an element, false otherwise
+		 */
+		self.hasZero = function() {
+			for(var i = 0; i < data.length; i++) {
+				if(data[i].isZero())
+					return true;
+			}
+			return false;
 		}
 
 		/**
@@ -475,6 +572,7 @@ var LinLib = (function() {
 		 * @return string s such that s represents self
 		 */
 		self.toString = function() {
+			record('Vector.toString', self);
 			return '{' + data.map(function(x) {
 				return x.toString();
 			}).join(', ') + '}';
@@ -503,6 +601,7 @@ var LinLib = (function() {
 		 * @return boolean b such that b = self == mat
 		 */
 		self.eq = function(mat) {
+			record('Matrix.eq', self, [mat]);
 			return zip([self.rowVectors(), mat.rowVectors()]).reduce(function(prev, x) {
 				return prev && x[0].eq(x[1]);
 			});
@@ -514,6 +613,7 @@ var LinLib = (function() {
 		 * @return int a where a is the number of columns of self
 		 */
 		self.colCount = function() {
+			record('Matrix.colCount', self);
 			return data[0].length;
 		};
 
@@ -523,6 +623,7 @@ var LinLib = (function() {
 		 * @return int a where a is the number of rows of self
 		 */
 		self.rowCount = function() {
+			record('Matrix.rowCount', self);
 			return data.length;
 		};
 
@@ -532,6 +633,7 @@ var LinLib = (function() {
 		 * @return array[array[Fraction]] the array representation of self
 		 */
 		self.toArray = function() {
+			record('Matrix.toArray', self);
 			result = data.slice(0);
 			for(var i = 0; i < result.length; i++) {
 				result[i] = result[i].slice(0);
@@ -545,6 +647,7 @@ var LinLib = (function() {
 		 * @return array[Vector] the array representing columns as vectors
 		 */
 		self.columnVectors = function() {
+			record('Matrix.columnVectors', self);
 			result = [];
 			for(var i = 0; i < self.colCount(); i++) {
 				column = [];
@@ -562,6 +665,7 @@ var LinLib = (function() {
 		 * @return array[Vector] the array representing rows as vectors
 		 */
 		self.rowVectors = function() {
+			record('Matrix.rowVectors', self);
 			result = [];
 			for(var i = 0; i < self.rowCount(); i++) {
 				result.push(new Vector(data[i].slice(0)));
@@ -577,6 +681,7 @@ var LinLib = (function() {
 		 * @return Matrix m that augmented matrix, null if not possible to augment
 		 */
 		self.augmentCol = function(vec) {
+			record('Matrix.augmentCol', self, [vec]);
 			if(vec.dim() != self.rowCount())
 				return null;
 			var vecArray = vec.toArray();
@@ -595,6 +700,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix, null if not possible to swap rows
 		 */
 		self.swapRows = function(i, j) {
+			record('Matrix.swapRows', self, [i, j]);
 			if(i >= self.rowCount() || i < 0 || j >= self.rowCount() || j < 0)
 				return null;
 			var copy = self.toArray();
@@ -613,6 +719,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix, null if not possible to scale row
 		 */
 		self.scaleRow = function(i, s) {
+			record('Matrix.scaleRow', self, [i, s]);
 			if(i >= self.rowCount() || i < 0)
 				return null;
 			var copy = self.toArray();
@@ -629,6 +736,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix, null if not possible to add rows
 		 */
 		self.addRowToRow = function(i, j) {
+			record('Matrix.addRowToRow', self, [i, j]);
 			if(i >= self.rowCount() || i < 0 || j >= self.rowCount() || j < 0)
 				return null;
 			var copy = self.toArray();
@@ -646,6 +754,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix, null if not possible to add rows
 		 */
 		self.addScaledRowToRow = function(i, s, j) {
+			record('Matrix.addScaledRowToRow', self, [i, s, j]);
 			if(i >= self.rowCount() || i < 0 || j >= self.rowCount() || j < 0)
 				return null;
 			var copy = self.toArray();
@@ -660,6 +769,7 @@ var LinLib = (function() {
 		 * @return Matrix m the inverted matrix
 		 */
 		self.invert = function() {
+			record('Matrix.invert', self);
 			if(self.rowCount() != self.colCount())
 				throw "Inverse not defined for non NxN";
 			if(self.determinant().isZero())
@@ -681,6 +791,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix
 		 */
 		self.gauss = function() {
+			record('Matrix.gauss', self);
 			var help = function(matrix, i) {
 				if(i >= matrix.rowCount() || i >= matrix.colCount())
 					return matrix;
@@ -712,6 +823,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix
 		 */
 		self.gaussJordan = function() {
+			record('Matrix.gaussJordan', self);
 			var help = function(matrix, i) {
 				if(i < 0)
 					return matrix;
@@ -738,6 +850,7 @@ var LinLib = (function() {
 		 * @return Matrix m the altered matrix, null if not possible to remove row and column
 		 */
 		self.removeCross = function(i, j) {
+			record('Matrix.removeCross', self);
 			if(i >= self.rowCount() || i < 0 || j >= self.rowCount() || j < 0)
 				return null;
 
@@ -751,22 +864,57 @@ var LinLib = (function() {
 		};
 
 		/**
+		 * Gets the diagonal of self as a vector.
+		 * 
+		 * @return Vector V where V is the diagonal of this
+		 *         matrix.
+		 */
+		self.getDiagonalVector = function() {
+			var result = [];
+			var bound = Math.min(self.colCount(), self.rowCount());
+			for(var i = 0; i < bound; i++) {
+				result.push(data[i][i]);
+			}
+			return new Vector(result);
+		};
+
+		/**
 		 * Calculates the determinant of self
 		 *
 		 * @requires self is NxN
 		 * @return Fraction a the determinant of self
 		 */
 		self.determinant = function() {
+			record('Matrix.determinant', self);
 			if(self.rowCount() != self.colCount())
 				throw "Determinant not defined for non NxN";
 			if(self.rowCount() == 1)
 				return data[0][0];
-			var sum = ZERO;
-			for(var i = 0; i < self.colCount(); i++) {
-				var factor = (i % 2 == 0 ? ONE : NEGATIVE_ONE);
-				sum = sum.add(factor.mult(data[0][i]).mult(self.removeCross(0, i).determinant()));
+			//convert to RRF and get the diagonal.
+			var id = startRecording(function(sig){
+				return sig == 'Matrix.swapRows' || sig == 'Matrix.addScaledRowToRow'
+						|| sig == 'Matrix.scaleRow'
+			});
+			var rrf = self.gaussJordan();
+			var steps = stopRecording(id);
+			var diagonal = rrf.getDiagonalVector();
+			console.log(diagonal.toString());
+			if(diagonal.hasZero()) {
+				return ZERO;
+			} else {
+				var multiplyRow = diagonal.toArray().reduce(function(prev, x) {
+					return prev.mult(x);
+				});
+				var factor = ONE;
+				for(var i = 0; i < steps.length; i++) {
+					if(steps[i].sig == 'Matrix.swapRows') {
+						factor = factor.mult(NEGATIVE_ONE);
+					} else if(steps[i].sig == 'Matrix.scaleRow') {
+						factor = factor.mult(steps[i].args[1].invert());
+					}
+				}
+				return factor.mult(multiplyRow);
 			}
-			return sum;
 		};
 
 		/**
@@ -776,6 +924,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self * mat, null if not possible 
 		 */
 		self.mult = function(mat) {
+			record('Matrix.mult', self, [mat]);
 			if(self.colCount() == mat.rowCount()){
 				var myRows = self.rowVectors();
 				var otherCols = mat.columnVectors();
@@ -800,6 +949,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self + mat, null if not possible 
 		 */
 		self.add = function(mat) {
+			record('Matrix.add', self, [mat]);
 			if(self.rowCount() != mat.rowCount() ||
 				self.colCount() != mat.colCount())
 				return null;
@@ -820,6 +970,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self - mat, null if not possible 
 		 */
 		self.sub = function(mat) {
+			record('Matrix.sub', self, [mat]);
 			if(self.rowCount() != mat.rowCount() ||
 				self.colCount() != mat.colCount())
 				return null;
@@ -839,6 +990,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self^n
 		 */
 		self.pow = function(n) {
+			record('Matrix.pow', self, [n]);
 			if(self.rowCount() != self.colCount())
 				throw "Self-multiplication not defined for non NxN";
 			var help = function(matrix, k) {
@@ -856,6 +1008,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self^T
 		 */
 		self.transpose = function() {
+			record('Matrix.transpose', self);
 			var result = [];
 			for(var i = 0; i < self.colCount(); i++) {
 				result[i] = [];
@@ -873,6 +1026,7 @@ var LinLib = (function() {
 		 * @return Matrix m such that m = self * s
 		 */
 		self.scale = function(s) {
+			record('Matrix.scale', self, [s]);
 			return new Matrix(self.rowVectors().map(function(x) {
 				return x.scale(s).toArray();
 			}));
@@ -884,6 +1038,7 @@ var LinLib = (function() {
 		 * @return string s such that s represents self
 		 */
 		self.toString = function() {
+			record('Matrix.toString', self);
 			return self.rowVectors().map(function(x) {
 				return x.toString();
 			}).join("\n");
@@ -900,5 +1055,9 @@ var LinLib = (function() {
 			'rowVecsToMatrix' : rowVecsToMatrix,
 			'colVecsToMatrix' : colVecsToMatrix,
 			'identity' : identity,
+			'debug' : {
+				'startRecording' : startRecording,
+				'stopRecording' : stopRecording
+			},
 			'zero' : zero};
 })()

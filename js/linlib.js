@@ -29,13 +29,20 @@ var LinLib = (function() {
 	 *         true or false on a operation signature. Returning true
 	 *         indicates that this operation will be recorded, false
 	 *         will not.
+	 * @param  closure callback (if defined) will be called with each recording that
+	 *         passes filter as it is called
 	 * @return int id where id is the id of this recording
 	 */
-	var startRecording = function(filter) {
-		if(typeof filter == 'undefined') {
-			filer = function(x) {return true};
-		}
-		recordings.push({'filter' : filter, 'ops' : []});
+	var startRecording = function(filter, callback) {
+		if(typeof filter == 'undefined')
+			filter = function(x) {return true};
+		if(typeof callback == 'undefined')
+			callback = function(x) {};
+		recordings.push({
+			'filter' : filter,
+			'callback' : callback,
+			'ops' : []
+		});
 		return recordings.length - 1;
 	};
 
@@ -69,12 +76,15 @@ var LinLib = (function() {
 	var record = function(sig, obj, args) {
 		if(recordings.length > 0) {
 			for(var i = 0; i < recordings.length; i++) {
-				if(recordings[i].filter(sig))
-					recordings[i].ops.push({
+				if(recordings[i].filter(sig)) {
+					var data = {
 						'sig' : sig,
 						'obj' : obj,
 						'args' : args
-					});
+					};
+					recordings[i].ops.push(data);
+					recordings[i].callback(data);
+				}
 			}
 			return true;
 		}
@@ -181,6 +191,47 @@ var LinLib = (function() {
 	};
 
 	/**
+	 * Applies Least Squared Approximation to a 
+	 * (sometimes) unsolvable system of equations representing
+	 * a 2d line through all the points passed in vector <x,y> form.
+	 *
+	 * @requires  points is an array of 2 dimensional vectors
+	 * @param  array[Vector] points The points to approximate
+	 * @return Vector V such that the first element of V is the unknown m,
+	 *          and the second value is the unknown b in the equation y = mx + b.
+	 */
+	var bestFitLine = function(points) {
+		// Least Squared Approximation:
+		// A^TA * Xaprox = A^Tb
+		//
+		// In this case, A is the matrix
+		// formed by the coeffiences of the
+		// line equation, and b is the 
+		// vector of f(x) = y coordinates.
+
+		var b = new Matrix([points.map(function(x) {
+			return x.get(1);
+		})]).transpose();
+
+		// Get a matrix A such that
+		// every row in A has two elements,
+		// the first will be the coefficent x for m,
+		// the second will be the coefficent 1 for b.
+		var a = new Matrix(points.map(function(x) {
+			return [x.get(0), ONE];
+		}));
+		
+		var aT = a.transpose();
+
+		// solve
+		// A^TA * Xaprox = A^Tb via gauss elimination
+		var result = aT.mult(a).augmentCol(aT.mult(b).columnVectors()[0]).gaussJordan();
+
+		//return the resultant augmented column vector yielding {Maprox,Baprox}
+		return result.columnVectors()[result.colCount() - 1];
+	};
+
+	/**
 	 * Generates the identity matrix with dimension n.
 	 * 
 	 * @param  int n dimension of identity matrix
@@ -238,6 +289,45 @@ var LinLib = (function() {
 			results.push(solved[solved.length - 1]);
 		}
 		return colVecsToMatrix(results);
+	};
+
+	/**
+	 * Returns true if a vector vec is orthogonal to a subspace formed
+	 * by basis.
+	 * 
+	 * @param  Vector vec the vector to check for orthogonality
+	 * @param  array[Vector] basis the basis of the subspace to check
+	 * @return true if vec is orthogonal to the subspace formed by basis,
+	 *         false otherwise.
+	 */
+	var orthogonalToSubspace = function(vec, basis) {
+		for(var i = 0; i < basis.length; i++) {
+			if(!basis[i].dot(vec).isZero())
+				return false;
+		}
+		return true;
+	};
+
+	/**
+	 * Returns a Vector V such that V is the projection
+	 * of vec on to a subspace formed by an orthogonal basis
+	 *
+	 * @requires  basis is an orthogonal basis of a subspace
+	 * @param  Vector vec the vector project
+	 * @param  array[Vector] basis the orthogonal basis of the subspace to project on to
+	 * @return Vector V such that V is the projection of vec onto basis
+	 */
+	var projectSubspace = function(vec, basis) {
+		// Let S be a non-zero subspace of R^n with orthogonal
+		// basis basis, and let vec be of R^n.
+		// The projection of vec on to S is the sum of
+		// the projections of vec on the elements of
+		// basis.
+		var result = vec.proj(basis[0]);
+		for(var i = 1; i < basis.length; i++) {
+			result = result.add(result.proj(basis[i]));
+		}
+		return result;
 	};
 
 
@@ -472,6 +562,20 @@ var LinLib = (function() {
 		};
 
 		/**
+		 * Gets the ith element in this matrix
+		 *
+		 * @requires i < self.dim() && i >= 0
+		 * @param int i the index of the element to get
+		 * @return Fraction f the element at i.
+		 */
+		self.get = function(i) {
+			record('Vector.get', self, [i]);
+			if(i >= self.dim() || i < 0)
+				throw "Illegal index";
+			return data[i];
+		};
+
+		/**
 		 * Gets the array representation of this vector
 		 * 
 		 * @return array[Fraction] the array representation of self
@@ -527,6 +631,39 @@ var LinLib = (function() {
 		};
 
 		/**
+		 * Find the distance^2 between two N dimensional vectors
+		 * 
+		 * @param Vector vec the vector to find the distance from
+		 * @return Fraction a such that a = dist(self, vec)^2
+		 */
+		self.distSq = function(vec) {
+			record('Vector.dist', self, [vec]);
+			var dif = self.sub(vec)
+			return dif.dot(dif);
+		};
+
+		/**
+		 * Find the length^2 of self
+		 * 
+		 * @return Fraction a such that a = ||self||^2
+		 */
+		self.lengthSq = function() {
+			return self.dot(self);
+		};
+
+		/**
+		 * Finds a vector V that is the projection
+		 * of self on to vec.
+		 * 
+		 * @param  Vector vec the vector to project on to.
+		 * @return Vector V such that V = proj(self, vec)
+		 */
+		self.proj = function(vec) {
+			return vec.scale(self.dot(vec).div(vec.lengthSq()));
+		};
+
+
+		/**
 		 * Scales self by scalar s
 		 * 
 		 * @param Fraction s the scalar to scale by
@@ -559,6 +696,7 @@ var LinLib = (function() {
 		 *            an element, false otherwise
 		 */
 		self.hasZero = function() {
+			record('Vector.hasZero', self);
 			for(var i = 0; i < data.length; i++) {
 				if(data[i].isZero())
 					return true;
@@ -689,6 +827,22 @@ var LinLib = (function() {
 				x.push(vecArray[index]);
 				return x;
 			}));
+		};
+
+		/**
+		 * Adds a row vector to the bottom of the matrix as a row
+		 * returning the result
+		 *
+		 * @requires vec.dim() == self.colCount()
+		 * @return Matrix m that augmented matrix, null if not possible to augment
+		 */
+		self.augmentRow = function(vec) {
+			record('Matrix.augmentRow', self, [vec]);
+			if(vec.dim() != self.colCount())
+				return null;
+			var result = self.toArray();
+			result.push(vec.toArray());
+			return new Matrix(result);
 		};
 
 		/**
@@ -870,6 +1024,7 @@ var LinLib = (function() {
 		 *         matrix.
 		 */
 		self.getDiagonalVector = function() {
+			record('Matrix.getDiagonalVector', self);
 			var result = [];
 			var bound = Math.min(self.colCount(), self.rowCount());
 			for(var i = 0; i < bound; i++) {
@@ -898,7 +1053,6 @@ var LinLib = (function() {
 			var rrf = self.gaussJordan();
 			var steps = stopRecording(id);
 			var diagonal = rrf.getDiagonalVector();
-			console.log(diagonal.toString());
 			if(diagonal.hasZero()) {
 				return ZERO;
 			} else {
@@ -1054,7 +1208,10 @@ var LinLib = (function() {
 			'changeOfBase' : changeOfBaseMatrix,
 			'rowVecsToMatrix' : rowVecsToMatrix,
 			'colVecsToMatrix' : colVecsToMatrix,
+			'orthogonalToSubspace' : orthogonalToSubspace,
+			'projectSubspace' : projectSubspace,
 			'identity' : identity,
+			'bestFitLine' : bestFitLine,
 			'debug' : {
 				'startRecording' : startRecording,
 				'stopRecording' : stopRecording

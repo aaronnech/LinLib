@@ -191,7 +191,7 @@ var LinLib = (function() {
 	};
 
 	/**
-	 * Applies Least Squared Approximation to a 
+	 * Applies Least Squares Approximation to a 
 	 * (sometimes) unsolvable system of equations representing
 	 * a 2d line through all the points passed in vector <x,y> form.
 	 *
@@ -209,9 +209,9 @@ var LinLib = (function() {
 		// line equation, and b is the 
 		// vector of f(x) = y coordinates.
 
-		var b = new Matrix([points.map(function(x) {
+		var b = new Vector(points.map(function(x) {
 			return x.get(1);
-		})]).transpose();
+		}));
 
 		// Get a matrix A such that
 		// every row in A has two elements,
@@ -220,6 +220,26 @@ var LinLib = (function() {
 		var a = new Matrix(points.map(function(x) {
 			return [x.get(0), ONE];
 		}));
+
+		return leastSquares(a, b);
+	};
+
+	/**
+	 * Applies Least Squares Approximation to a 
+	 * (sometimes) unsolvable system of equations in the
+	 * form ax = b
+	 *
+	 * @requires  a is a mxn matrix, and b is a mx1 matrix
+	 * @param  Matrix a is the transformation matrix from x to b
+	 * @param Vector b is the resultant of apply a to x
+	 * @return Vector V such that elements of V are the approximations to
+	 *         {x1, x2 ...}
+	 */
+	var leastSquares = function(a, b) {
+		// Least Squared Approximation:
+		// A^TA * Xaprox = A^Tb
+
+		var b = colVecsToMatrix([b]);
 		
 		var aT = a.transpose();
 
@@ -1206,6 +1226,7 @@ var LinLib = (function() {
 			'parseVectors' : parseVectors,
 			'parseFraction' : parseFraction,
 			'changeOfBase' : changeOfBaseMatrix,
+			'leastSquares' : leastSquares,
 			'rowVecsToMatrix' : rowVecsToMatrix,
 			'colVecsToMatrix' : colVecsToMatrix,
 			'orthogonalToSubspace' : orthogonalToSubspace,

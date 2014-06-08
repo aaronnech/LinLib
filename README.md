@@ -46,6 +46,10 @@ Functions that are exposed from the library under the namespace LinLib are as fo
 	'rowVecsToMatrix' : rowVecsToMatrix,
 	'colVecsToMatrix' : colVecsToMatrix,
 	'identity' : identity,
+	'debug' : {
+		'startRecording' : startRecording,
+		'stopRecording' : stopRecording
+	},
 	'zero' : zero
 	}
 

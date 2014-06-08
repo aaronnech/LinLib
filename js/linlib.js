@@ -325,7 +325,7 @@ var LinLib = (function() {
 		// basis.
 		var result = vec.proj(basis[0]);
 		for(var i = 1; i < basis.length; i++) {
-			result = result.add(result.proj(basis[i]));
+			result = result.add(vec.proj(basis[i]));
 		}
 		return result;
 	};

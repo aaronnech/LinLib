@@ -37,21 +37,22 @@ Interface Functions
 
 Functions that are exposed from the library under the namespace LinLib are as follows:
 
-	{
-	'parseMatrix' : parseMatrix,
+	{'parseMatrix' : parseMatrix,
 	'parseVector' : parseVector,
 	'parseVectors' : parseVectors,
 	'parseFraction' : parseFraction,
 	'changeOfBase' : changeOfBaseMatrix,
 	'rowVecsToMatrix' : rowVecsToMatrix,
 	'colVecsToMatrix' : colVecsToMatrix,
+	'orthogonalToSubspace' : orthogonalToSubspace,
+	'projectSubspace' : projectSubspace,
 	'identity' : identity,
+	'bestFitLine' : bestFitLine,
 	'debug' : {
 		'startRecording' : startRecording,
 		'stopRecording' : stopRecording
 	},
-	'zero' : zero
-	}
+	'zero' : zero};
 
 Of course, the library primitives, once constructed, will have operations exposed to them. (Such as transpose() for Matrix).
 

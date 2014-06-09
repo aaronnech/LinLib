@@ -42,6 +42,7 @@ Functions that are exposed from the library under the namespace LinLib are as fo
 	'parseVectors' : parseVectors,
 	'parseFraction' : parseFraction,
 	'changeOfBase' : changeOfBaseMatrix,
+	'leastSquares' : leastSquares,
 	'rowVecsToMatrix' : rowVecsToMatrix,
 	'colVecsToMatrix' : colVecsToMatrix,
 	'orthogonalToSubspace' : orthogonalToSubspace,
@@ -53,7 +54,6 @@ Functions that are exposed from the library under the namespace LinLib are as fo
 		'stopRecording' : stopRecording
 	},
 	'zero' : zero};
-
 Of course, the library primitives, once constructed, will have operations exposed to them. (Such as transpose() for Matrix).
 
 Usage
